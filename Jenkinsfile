@@ -16,6 +16,7 @@ pipeline {
             steps {
                 echo '📥 GitHub\'dan kodlar çekiliyor...'
                 checkout scm
+                sh 'chmod +x ./mvnw'
             }
         }
 
