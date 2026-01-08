@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library LMS - Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body class="dashboard-body">
+    <nav class="navbar">
+        <div class="nav-brand">📚 LMS Enterprise</div>
+        <div class="nav-links">
+            <span id="welcome-message">Welcome, User</span>
+            <button id="logoutBtn" class="btn-outline">Logout</button>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="books">Books Catalog</button>
+            <button class="tab-btn" data-tab="loans">My Loans</button>
+        </div>
+
+        <!-- Books Content -->
+        <div id="books" class="tab-content active">
+            <div class="content-header">
+                <h3>Available Books</h3>
+                <div class="search-bar">
+                    <input type="text" id="bookSearch" placeholder="Search by title, author or ISBN...">
+                </div>
+            </div>
+            <div id="booksList" class="grid-container">
+                <!-- Book Items Injected Here -->
+            </div>
+        </div>
+
+        <!-- Loans Content -->
+        <div id="loans" class="tab-content">
+            <div class="content-header">
+                <h3>My Active Loans</h3>
+            </div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Book Title</th>
+                        <th>Loan Date</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="loansList">
+                    <!-- Loan Items Injected Here -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="js/dashboard.js"></script>
+</body>
+
+</html>

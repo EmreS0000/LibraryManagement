@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: ManagementApplication
+  main:
+    allow-bean-definition-overriding: true
+  datasource:
+    url: jdbc:postgresql://localhost:5432/DogrulamaGecerleme
+    username: postgres
+    password: '1234'
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+
+server:
+  port: 8080
+
+springdoc:
+  api-docs:
+    path: /api/v1/api-docs
+  swagger-ui:
+    path: /api/v1/swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, metrics

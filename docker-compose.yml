@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: library-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/DogrulamaGecerleme
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=1234
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    depends_on:
+      - db
+    networks:
+      - library-net
+
+  frontend:
+    build: ./frontend
+    container_name: library-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - app
+    networks:
+      - library-net
+
+  db:
+    image: postgres:17-alpine
+    container_name: library-db
+    environment:
+      - POSTGRES_DB=DogrulamaGecerleme
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=1234
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - library-net
+
+  selenium:
+    image: selenium/standalone-chrome:latest
+    container_name: selenium-chrome
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+    shm_size: "2gb"
+    depends_on:
+      - frontend
+    networks:
+      - library-net
+
+volumes:
+  postgres_data:
+
+networks:
+  library-net:
+    driver: bridge

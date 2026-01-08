@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library LMS - Register</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="brand-logo">📚 LMS Enterprise</div>
+            <h2>Create Account</h2>
+            <form id="registerForm">
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="phone">Phone Number</label>
+                    <input type="tel" id="phone" required>
+                </div>
+                <button type="submit" id="registerBtn" class="btn-primary">Create Account</button>
+            </form>
+            <div class="auth-footer">
+                <p>Already have an account? <a href="index.html">Sign in</a></p>
+            </div>
+            <div id="alertMessage" class="alert hidden"></div>
+        </div>
+    </div>
+    <script src="js/auth.js"></script>
+</body>
+
+</html>
