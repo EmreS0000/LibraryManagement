@@ -14,7 +14,6 @@ pipeline {
     stages {
         stage('📥 Checkout') {
             steps {
-                echo '📥 GitHub\'dan kodlar çekiliyor...'
                 checkout scm
                 sh 'chmod +x ./mvnw'
             }
@@ -22,30 +21,26 @@ pipeline {
 
         stage('🔨 Build') {
             steps {
-                echo '🔨 Proje build ediliyor...'
-                sh './mvnw clean compile -DskipTests'
+                sh './mvnw clean compile -DskipTests -q'
             }
         }
 
         stage('🧪 Unit Tests') {
             steps {
-                echo '🧪 Birim testleri çalıştırılıyor...'
-                sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2ETest'
+                sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2ETest -q'
             }
         }
 
         stage('🔗 Integration Tests') {
             steps {
-                echo '🔗 Entegrasyon testleri çalıştırılıyor...'
-                sh './mvnw test -Dtest=*IntegrationTest'
+                sh './mvnw test -Dtest=*IntegrationTest -q'
             }
         }
 
         stage('🏗️ Frontend Build') {
             steps {
-                echo '🏗️ Frontend build ediliyor...'
                 dir('frontend') {
-                    sh 'npm install'
+                    sh 'npm install --silent'
                     sh 'npm run build'
                 }
             }
@@ -53,15 +48,13 @@ pipeline {
 
         stage('🐳 Docker Build & Run') {
             steps {
-                echo '🐳 Docker containers başlatılıyor...'
                 script {
                     try {
                         sh 'docker-compose down -v'
                     } catch (Exception e) {
-                        echo '⚠️ Container yok, devam ediliyor...'
+                        echo 'Devam ediliyor...'
                     }
                     sh 'docker-compose up -d --build'
-                    echo '⏳ Uygulamanın başlatılması için 30 saniye bekleniyor...'
                     sh 'sleep 30'
                     sh 'docker-compose ps'
                 }
@@ -70,14 +63,12 @@ pipeline {
 
         stage('🌐 Selenium E2E Tests') {
             steps {
-                echo '🌐 Selenium E2E testleri çalıştırılıyor...'
-                sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java"'
+                sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -q'
             }
         }
 
         stage('📊 Test Reports') {
             steps {
-                echo '📊 Test raporları hazırlanıyor...'
                 junit allowEmptyResults: true, 
                       testResults: '**/target/surefire-reports/*.xml,**/target/failsafe-reports/*.xml'
             }
@@ -85,8 +76,7 @@ pipeline {
 
         stage('📈 Code Coverage') {
             steps {
-                echo '📈 Kod kapsama raporu oluşturuluyor...'
-                sh './mvnw jacoco:report'
+                sh './mvnw jacoco:report -q'
                 publishHTML([
                     reportDir: 'target/site/jacoco',
                     reportFiles: 'index.html',
@@ -98,20 +88,18 @@ pipeline {
 
     post {
         always {
-            echo '🧹 Cleanup işlemleri yapılıyor...'
             sh 'docker-compose logs > docker-logs.txt || true'
             archiveArtifacts artifacts: 'target/*.jar,docker-logs.txt', fingerprint: true, allowEmptyArchive: true
             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml,**/target/failsafe-reports/*.xml'
         }
         success {
-            echo '✅ Pipeline başarılı!'
+            echo '✅ Build başarılı!'
         }
         failure {
-            echo '❌ Pipeline başarısız!'
+            echo '❌ Build başarısız!'
             sh 'docker-compose logs || true'
         }
         cleanup {
-            echo '🧹 Docker containers kapatılıyor...'
             sh 'docker-compose down || true'
         }
     }
