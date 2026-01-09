@@ -31,11 +31,14 @@ pipeline {
             }
         }
 
-        stage('🔗 Integration Tests') {
-            steps {
-                sh './mvnw test -Dtest=*IntegrationTest -DargLine="-Xmx512m" -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL=300 -q'
-            }
+       stage('🔗 Integration Tests') {
+    steps {
+        timeout(time: 5, unit: 'MINUTES') {
+            sh './mvnw test -Dtest=*IntegrationTest -DargLine="-Xmx512m" -q'
         }
+    }
+}
+        
 
         stage('🏗️ Frontend Build') {
             steps {
@@ -55,7 +58,7 @@ pipeline {
                         echo 'Devam ediliyor...'
                     }
                     sh 'docker compose up -d --build'
-                    she 'sleep 30' // Servislerin başlatılması için bekleme süresi
+                    sh 'sleep 30' // Servislerin başlatılması için bekleme süresi
                     sh 'docker compose ps'
                 }
             }
@@ -63,7 +66,7 @@ pipeline {
 
         stage('🌐 Selenium E2E Tests') {
             steps {
-                sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL=300 -q'
+                sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -q'
             }
         }
 
