@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Jenkins'deki NODE_OPTIONS ile uyumlu (256MB)
-ENV NODE_OPTIONS="--max-old-space-size=256"
+ENV NODE_OPTIONS="--max-old-space-size=512"
 RUN npm ci --legacy-peer-deps --silent --prefer-offline --no-audit
 
 COPY . .
