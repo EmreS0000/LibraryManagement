@@ -55,7 +55,6 @@ pipeline {
                         echo 'Devam ediliyor...'
                     }
                     sh 'docker compose up -d --build'
-                    sh 'sleep 30'
                     sh 'docker compose ps'
                 }
             }
@@ -63,7 +62,7 @@ pipeline {
 
         stage('🌐 Selenium E2E Tests') {
             steps {
-                sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -q'
+                sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL=300 -q'
             }
         }
 
