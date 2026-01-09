@@ -4,6 +4,7 @@ pipeline {
     options {
         timeout(time: 2, unit: 'HOURS')
         buildDiscarder(logRotator(numToKeepStr: '10'))
+        ansiColor('xterm')
     }
 
     environment {
@@ -12,9 +13,19 @@ pipeline {
     }
 
     stages {
-        stage('📥 Checkout') {
+
+        stage('📥 Clean & Checkout') {
             steps {
-                checkout scm
+                // Workspace temizleme
+                deleteDir()
+                // Git checkout
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],  // branch ismi doğru olduğundan emin ol
+                    doGenerateSubmoduleConfigurations: false,
+                    extensions: [[$class: 'CloneOption', noTags: false, shallow: false, depth: 0]],
+                    userRemoteConfigs: [[url: 'https://github.com/EmreS0000/LibraryManagement.git']]
+                ])
                 sh 'chmod +x ./mvnw'
             }
         }
@@ -31,14 +42,13 @@ pipeline {
             }
         }
 
-       stage('🔗 Integration Tests') {
-    steps {
-        timeout(time: 5, unit: 'MINUTES') {
-            sh './mvnw test -Dtest=*IntegrationTest -DargLine="-Xmx512m" -q'
+        stage('🔗 Integration Tests') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    sh './mvnw test -Dtest=*IntegrationTest -DargLine="-Xmx512m" -q'
+                }
+            }
         }
-    }
-}
-        
 
         stage('🏗️ Frontend Build') {
             steps {
@@ -52,13 +62,10 @@ pipeline {
         stage('🐳 Docker Build & Run') {
             steps {
                 script {
-                    try {
-                        sh 'docker compose down -v'
-                    } catch (Exception e) {
-                        echo 'Devam ediliyor...'
-                    }
+                    // Eski container varsa kapat
+                    try { sh 'docker compose down -v' } catch(Exception e) { echo 'Devam ediliyor...' }
                     sh 'docker compose up -d --build'
-                    sh 'sleep 30' // Servislerin başlatılması için bekleme süresi
+                    sh 'sleep 30'
                     sh 'docker compose ps'
                 }
             }
@@ -72,7 +79,7 @@ pipeline {
 
         stage('📊 Test Reports') {
             steps {
-                junit allowEmptyResults: true, 
+                junit allowEmptyResults: true,
                       testResults: '**/target/surefire-reports/*.xml,**/target/failsafe-reports/*.xml'
             }
         }
@@ -93,14 +100,12 @@ pipeline {
         always {
             sh 'docker compose logs > docker-logs.txt || true'
             archiveArtifacts artifacts: 'target/*.jar,docker-logs.txt', fingerprint: true, allowEmptyArchive: true
-            junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml,**/target/failsafe-reports/*.xml'
         }
         success {
             echo '✅ Build başarılı!'
         }
         failure {
             echo '❌ Build başarısız!'
-            sh 'docker compose logs || true'
         }
         cleanup {
             sh 'docker compose down -v || true'
