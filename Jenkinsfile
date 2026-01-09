@@ -100,7 +100,7 @@ pipeline {
             sh 'docker compose logs || true'
         }
         cleanup {
-            sh 'docker-compose down || true'
+            sh 'docker compose down -v || true'
         }
     }
 }
