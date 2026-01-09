@@ -55,6 +55,7 @@ pipeline {
                         echo 'Devam ediliyor...'
                     }
                     sh 'docker compose up -d --build'
+                    she 'sleep 30' // Servislerin başlatılması için bekleme süresi
                     sh 'docker compose ps'
                 }
             }
