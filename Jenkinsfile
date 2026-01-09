@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     options {
-        timeout(time: 1, unit: 'HOURS')
+        timeout(time: 2, unit: 'HOURS')
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
@@ -27,13 +27,13 @@ pipeline {
 
         stage('🧪 Unit Tests') {
             steps {
-                sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2ETest -q'
+                sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2ETest -DargLine="-Xmx512m" -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL=300 -q'
             }
         }
 
         stage('🔗 Integration Tests') {
             steps {
-                sh './mvnw test -Dtest=*IntegrationTest -q'
+                sh './mvnw test -Dtest=*IntegrationTest -DargLine="-Xmx512m" -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL=300 -q'
             }
         }
 
