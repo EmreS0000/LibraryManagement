@@ -27,7 +27,7 @@ pipeline {
 
         stage('🧪 Unit Tests') {
             steps {
-                sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2ETest -DargLine="-Xmx512m" -Dorg.jenkinsci.plugins.durabletask.BourneShellScript.HEARTBEAT_CHECK_INTERVAL=300 -q'
+                sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2E* -DargLine="-Xmx512m" -q'
             }
         }
 
