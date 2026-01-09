@@ -50,13 +50,13 @@ pipeline {
             steps {
                 script {
                     try {
-                        sh 'docker-compose down -v'
+                        sh 'docker compose down -v'
                     } catch (Exception e) {
                         echo 'Devam ediliyor...'
                     }
-                    sh 'docker-compose up -d --build'
+                    sh 'docker compose up -d --build'
                     sh 'sleep 30'
-                    sh 'docker-compose ps'
+                    sh 'docker compose ps'
                 }
             }
         }
@@ -88,7 +88,7 @@ pipeline {
 
     post {
         always {
-            sh 'docker-compose logs > docker-logs.txt || true'
+            sh 'docker compose logs > docker-logs.txt || true'
             archiveArtifacts artifacts: 'target/*.jar,docker-logs.txt', fingerprint: true, allowEmptyArchive: true
             junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml,**/target/failsafe-reports/*.xml'
         }
@@ -97,7 +97,7 @@ pipeline {
         }
         failure {
             echo '❌ Build başarısız!'
-            sh 'docker-compose logs || true'
+            sh 'docker compose logs || true'
         }
         cleanup {
             sh 'docker-compose down || true'
