@@ -4,24 +4,23 @@ pipeline {
     options {
         timeout(time: 2, unit: 'HOURS')
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        
     }
 
     environment {
         DOCKER_REGISTRY = 'docker.io'
         COMPOSE_PROJECT_NAME = 'library-app'
+        MAVEN_OPTS = '-Xmx384m -Xms256m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1'
+        NODE_OPTIONS = '--max-old-space-size=512'
     }
 
     stages {
 
         stage('📥 Clean & Checkout') {
             steps {
-                // Workspace temizleme
                 deleteDir()
-                // Git checkout
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/main']],  // branch ismi doğru olduğundan emin ol
+                    branches: [[name: '*/main']],
                     doGenerateSubmoduleConfigurations: false,
                     extensions: [[$class: 'CloneOption', noTags: false, shallow: false, depth: 0]],
                     userRemoteConfigs: [[url: 'https://github.com/EmreS0000/LibraryManagement.git']]
@@ -32,20 +31,20 @@ pipeline {
 
         stage('🔨 Build') {
             steps {
-                sh './mvnw clean compile -DskipTests -q'
+                sh './mvnw clean compile -DskipTests -T 1 -q'
             }
         }
 
         stage('🧪 Unit Tests') {
             steps {
-                sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2E* -DargLine="-Xmx512m" -q'
+                sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2E* -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" -q'
             }
         }
 
         stage('🔗 Integration Tests') {
             steps {
-                timeout(time: 5, unit: 'MINUTES') {
-                    sh './mvnw test -Dtest=*IntegrationTest -DargLine="-Xmx512m" -q'
+                timeout(time: 10, unit: 'MINUTES') {
+                    sh './mvnw test -Dtest=*IntegrationTest -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" -q'
                 }
             }
         }
@@ -53,7 +52,7 @@ pipeline {
         stage('🏗️ Frontend Build') {
             steps {
                 dir('frontend') {
-                    sh 'npm install --silent'
+                    sh 'npm install --silent --prefer-offline --no-audit'
                     sh 'npm run build'
                 }
             }
@@ -62,18 +61,24 @@ pipeline {
         stage('🐳 Docker Build & Run') {
             steps {
                 script {
-                    // Eski container varsa kapat
-                    try { sh 'docker compose down -v' } catch(Exception e) { echo 'Devam ediliyor...' }
-                    sh 'docker compose up -d --build'
-                    sh 'sleep 30'
-                    sh 'docker compose ps'
+                    try { 
+                        sh 'docker-compose down -v || true'
+                        sh 'sleep 5'
+                    } catch(Exception e) { 
+                        echo 'Devam ediliyor...' 
+                    }
+                    sh 'docker-compose up -d --build'
+                    sh 'sleep 40'
+                    sh 'docker-compose ps'
                 }
             }
         }
 
         stage('🌐 Selenium E2E Tests') {
             steps {
-                sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -q'
+                timeout(time: 10, unit: 'MINUTES') {
+                    sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC" -q'
+                }
             }
         }
 
@@ -98,7 +103,7 @@ pipeline {
 
     post {
         always {
-            sh 'docker compose logs > docker-logs.txt || true'
+            sh 'docker-compose logs > docker-logs.txt || true'
             archiveArtifacts artifacts: 'target/*.jar,docker-logs.txt', fingerprint: true, allowEmptyArchive: true
         }
         success {
@@ -108,7 +113,8 @@ pipeline {
             echo '❌ Build başarısız!'
         }
         cleanup {
-            sh 'docker compose down -v || true'
+            sh 'docker-compose down -v || true'
+            sh 'docker system prune -f || true'
         }
     }
 }
