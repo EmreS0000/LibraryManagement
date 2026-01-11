@@ -133,19 +133,19 @@ stage('🏗️ Frontend Build') {
             }
         }
 
-        stage('🌐 Selenium E2E Tests') {
-            steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    script {
-                        if (isUnix()) {
-                            sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC" -q'
-                        } else {
-                            bat 'mvnw.cmd failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC" -q'
-                        }
-                    }
+stage('🌐 Selenium E2E Tests') {
+    steps {
+        timeout(time: 10, unit: 'MINUTES') {
+            script {
+                if (isUnix()) {
+                    sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -DforkCount=1 -DreuseForks=true -DargLine="-Xmx512m -Xms256m -XX:MaxMetaspaceSize=512m -XX:+UseSerialGC" -q'
+                } else {
+                    bat 'mvnw.cmd failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -DforkCount=1 -DreuseForks=true -DargLine="-Xmx512m -Xms256m -XX:MaxMetaspaceSize=512m -XX:+UseSerialGC" -q'
                 }
             }
         }
+    }
+}
 
         stage('📊 Test Reports') {
             steps {
