@@ -76,21 +76,33 @@ pipeline {
             }
         }
 
-        stage('🏗️ Frontend Build') {
-            steps {
-                dir('frontend') {
-                    script {
-                        if (isUnix()) {
-                            sh 'npm install --silent --prefer-offline --no-audit'
-                            sh 'npm run build'
-                        } else {
-                            bat 'npm install --silent --prefer-offline --no-audit'
-                            bat 'npm run build'
-                        }
-                    }
+stage('🏗️ Frontend Build') {
+    steps {
+        dir('frontend') {
+            script {
+                if (isUnix()) {
+                    sh 'npm -v'
+                    sh 'npm install --silent --prefer-offline --no-audit'
+                    sh 'npm run build'
+                } else {
+                    // Windows: npm PATH'te görünmeyebiliyor (Jenkins service hesabı).
+                    // O yüzden direkt npm.cmd tam yolundan çağırıyoruz.
+                    def NPM = 'C:\\Program Files\\nodejs\\npm.cmd'
+
+                    // Teşhis amaçlı: log'a bas (istersen sonra silebilirsin)
+                    bat 'where node || ver'
+                    bat 'where npm || ver'
+                    bat 'node -v'
+
+                    // Asıl çözüm:
+                    bat "\"${NPM}\" -v"
+                    bat "\"${NPM}\" install --silent --prefer-offline --no-audit"
+                    bat "\"${NPM}\" run build"
                 }
             }
         }
+    }
+}
 
         stage('🐳 Docker Build & Run') {
             steps {
