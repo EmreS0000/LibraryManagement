@@ -25,26 +25,53 @@ pipeline {
                     extensions: [[$class: 'CloneOption', noTags: false, shallow: false, depth: 0]],
                     userRemoteConfigs: [[url: 'https://github.com/EmreS0000/LibraryManagement.git']]
                 ])
-                sh 'chmod +x ./mvnw'
+
+                script {
+                    // Windows agent'ta sh/chmod patlar; Unix'te aynı kalsın
+                    if (isUnix()) {
+                        sh 'chmod +x ./mvnw'
+                    } else {
+                        // Windows'ta chmod gerekmez (mvnw.cmd zaten çalıştırılabilir)
+                        echo 'Windows agent: chmod atlandı.'
+                    }
+                }
             }
         }
 
         stage('🔨 Build') {
             steps {
-                sh './mvnw clean compile -DskipTests -T 1 -q'
+                script {
+                    if (isUnix()) {
+                        sh './mvnw clean compile -DskipTests -T 1 -q'
+                    } else {
+                        bat 'mvnw.cmd clean compile -DskipTests -T 1 -q'
+                    }
+                }
             }
         }
 
         stage('🧪 Unit Tests') {
             steps {
-                sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2E* -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" -q'
+                script {
+                    if (isUnix()) {
+                        sh './mvnw test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2E* -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" -q'
+                    } else {
+                        bat 'mvnw.cmd test -Dtest=!*IntegrationTest,!*SeleniumTest,!*E2E* -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" -q'
+                    }
+                }
             }
         }
 
         stage('🔗 Integration Tests') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    sh './mvnw test -Dtest=*IntegrationTest -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" -q'
+                    script {
+                        if (isUnix()) {
+                            sh './mvnw test -Dtest=*IntegrationTest -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" -q'
+                        } else {
+                            bat 'mvnw.cmd test -Dtest=*IntegrationTest -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC -XX:TieredStopAtLevel=1" -q'
+                        }
+                    }
                 }
             }
         }
@@ -52,8 +79,15 @@ pipeline {
         stage('🏗️ Frontend Build') {
             steps {
                 dir('frontend') {
-                    sh 'npm install --silent --prefer-offline --no-audit'
-                    sh 'npm run build'
+                    script {
+                        if (isUnix()) {
+                            sh 'npm install --silent --prefer-offline --no-audit'
+                            sh 'npm run build'
+                        } else {
+                            bat 'npm install --silent --prefer-offline --no-audit'
+                            bat 'npm run build'
+                        }
+                    }
                 }
             }
         }
@@ -61,15 +95,28 @@ pipeline {
         stage('🐳 Docker Build & Run') {
             steps {
                 script {
-                    try { 
-                        sh 'docker-compose down -v || true'
-                        sh 'sleep 5'
-                    } catch(Exception e) { 
-                        echo 'Devam ediliyor...' 
+                    try {
+                        if (isUnix()) {
+                            sh 'docker-compose down -v || true'
+                            sh 'sleep 5'
+                        } else {
+                            // Windows bat içinde "|| true" yok; hata olsa da pipeline durmasın diye try/catch zaten var
+                            bat 'docker-compose down -v'
+                            bat 'powershell -Command "Start-Sleep -Seconds 5"'
+                        }
+                    } catch(Exception e) {
+                        echo 'Devam ediliyor...'
                     }
-                    sh 'docker-compose up -d --build'
-                    sh 'sleep 40'
-                    sh 'docker-compose ps'
+
+                    if (isUnix()) {
+                        sh 'docker-compose up -d --build'
+                        sh 'sleep 40'
+                        sh 'docker-compose ps'
+                    } else {
+                        bat 'docker-compose up -d --build'
+                        bat 'powershell -Command "Start-Sleep -Seconds 40"'
+                        bat 'docker-compose ps'
+                    }
                 }
             }
         }
@@ -77,7 +124,13 @@ pipeline {
         stage('🌐 Selenium E2E Tests') {
             steps {
                 timeout(time: 10, unit: 'MINUTES') {
-                    sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC" -q'
+                    script {
+                        if (isUnix()) {
+                            sh './mvnw failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC" -q'
+                        } else {
+                            bat 'mvnw.cmd failsafe:integration-test failsafe:verify -DskipUnitTests -Dincludes="**/*SeleniumTest.java,**/*E2ETest*.java" -DforkCount=1 -DreuseForks=true -DargLine="-Xmx192m -Xms128m -XX:MaxMetaspaceSize=96m -XX:+UseSerialGC" -q'
+                        }
+                    }
                 }
             }
         }
@@ -91,7 +144,14 @@ pipeline {
 
         stage('📈 Code Coverage') {
             steps {
-                sh './mvnw jacoco:report -q'
+                script {
+                    if (isUnix()) {
+                        sh './mvnw jacoco:report -q'
+                    } else {
+                        bat 'mvnw.cmd jacoco:report -q'
+                    }
+                }
+
                 publishHTML([
                     reportDir: 'target/site/jacoco',
                     reportFiles: 'index.html',
@@ -103,7 +163,18 @@ pipeline {
 
     post {
         always {
-            sh 'docker-compose logs > docker-logs.txt || true'
+            script {
+                if (isUnix()) {
+                    sh 'docker-compose logs > docker-logs.txt || true'
+                } else {
+                    // Windows'ta redirect var, ama komut hata verirse pipeline'ı düşürmesin
+                    try {
+                        bat 'docker-compose logs > docker-logs.txt'
+                    } catch(Exception e) {
+                        echo 'docker-compose logs alınamadı (Windows).'
+                    }
+                }
+            }
             archiveArtifacts artifacts: 'target/*.jar,docker-logs.txt', fingerprint: true, allowEmptyArchive: true
         }
         success {
@@ -113,8 +184,19 @@ pipeline {
             echo '❌ Build başarısız!'
         }
         cleanup {
-            sh 'docker-compose down -v || true'
-            sh 'docker system prune -f || true'
+            script {
+                try {
+                    if (isUnix()) {
+                        sh 'docker-compose down -v || true'
+                        sh 'docker system prune -f || true'
+                    } else {
+                        bat 'docker-compose down -v'
+                        bat 'docker system prune -f'
+                    }
+                } catch(Exception e) {
+                    echo 'Cleanup sırasında hata oldu ama yutuldu.'
+                }
+            }
         }
     }
 }
